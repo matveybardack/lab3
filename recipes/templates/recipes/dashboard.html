@@ -1,0 +1,119 @@
+{% extends "recipes/base.html" %}
+
+{% block content %}
+
+  <section id="result-section">
+    <h2>Ваш случайный рецепт:</h2>
+    {% if generated %}
+      <h3>{{ generated.title }}</h3>
+      <p class="muted">
+        {{ generated.get_category_display }} · {{ generated.cooking_time }} мин
+      </p>
+      <p><strong>Ингредиенты:</strong><br>{{ generated.ingredients|linebreaksbr }}</p>
+      <p><strong>Способ приготовления:</strong><br>{{ generated.instructions|linebreaksbr }}</p>
+    {% else %}
+      <p class="muted">Нажмите «Сгенерировать», чтобы получить рецепт.</p>
+    {% endif %}
+  </section>
+
+  <section id="generate-section">
+    <h2>Генерация</h2>
+    <form method="post" action="{% url 'generate' %}">
+      {% csrf_token %}
+      <label for="{{ generate_form.category.id_for_label }}">{{ generate_form.category.label }}</label>
+      {{ generate_form.category }}
+      <label for="{{ generate_form.max_time.id_for_label }}">{{ generate_form.max_time.label }}</label>
+      {{ generate_form.max_time }}
+      <button type="submit">🎲 Сгенерировать</button>
+    </form>
+  </section>
+
+  <section id="table-section">
+    <h2>Все рецепты</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>Категория</th>
+          <th>Время</th>
+          <th>Выпадал раз</th>
+          <th>Действие</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for recipe in recipes %}
+          <tr>
+            <td>{{ recipe.title }}</td>
+            <td>{{ recipe.get_category_display }}</td>
+            <td>{{ recipe.cooking_time }} мин</td>
+            <td>{{ recipe.times_generated }}</td>
+            <td>
+              <form method="post" action="{% url 'delete_recipe' recipe.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="danger">Удалить</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="muted">Пока нет рецептов</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section id="add-section">
+    <h2>Добавить рецепт</h2>
+    <form method="post" action="{% url 'add_recipe' %}">
+      {% csrf_token %}
+      {% for field in recipe_form %}
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      {% endfor %}
+      <button type="submit">Добавить</button>
+    </form>
+  </section>
+
+  <section id="chart-section">
+    <h2>График активности (7 дней)</h2>
+    <canvas id="activityChart" height="100"></canvas>
+  </section>
+
+  <section id="log-section">
+    <h2>Журнал активности</h2>
+    <table>
+      <thead>
+        <tr><th>Время</th><th>Тип</th><th>Сообщение</th></tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+          <tr>
+            <td>{{ log.created_at|date:"d.m.Y H:i:s" }}</td>
+            <td>{{ log.get_action_display }}</td>
+            <td>{{ log.message }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="muted">Журнал пуст</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    fetch("{% url 'activity_stats' %}")
+      .then(r => r.json())
+      .then(data => {
+        new Chart(document.getElementById("activityChart"), {
+          type: "bar",
+          data: {
+            labels: data.labels,
+            datasets: [{ label: "Событий в день", data: data.counts }]
+          },
+          options: {
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+          }
+        });
+      });
+  </script>
+
+{% endblock %}

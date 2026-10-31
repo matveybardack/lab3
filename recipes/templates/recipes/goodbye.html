@@ -1,0 +1,11 @@
+{% extends "recipes/base.html" %}
+
+{% block title %}Выход{% endblock %}
+
+{% block content %}
+  <section>
+    <h2>👋 До встречи!</h2>
+    <p>Сеанс завершён. Можете закрыть вкладку и остановить сервер (Ctrl+C).</p>
+    <p><a href="{% url 'dashboard' %}">Вернуться на главную</a></p>
+  </section>
+{% endblock %}
